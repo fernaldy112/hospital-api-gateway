@@ -1,4 +1,5 @@
 from flask import Flask, request
+import re
 from random import choice
 app = Flask(__name__)
 
@@ -15,12 +16,18 @@ minutes = [0, 15, 30, 45]
 
 
 @app.route("/help", methods=["GET"])
-def getHelp():
+def get_help():
     return {"name": "grand-oak"}
 
 
 @app.route("/appointment", methods=["POST"])
-def createAppointment():
+def create_appointment():
+    error = validate_request_body(request.form)
+    if error is not None:
+        return {
+            "message": error
+        }, 400
+
     doctor = choice(doctors)
     hour = choice(hours)
     minute = choice(minutes)
@@ -31,3 +38,12 @@ def createAppointment():
         "time": time,
     }
     return data
+
+def validate_request_body(body: dict):
+    if "date" not in body:
+        return "The field `date` is required."
+    if not is_iso_date(body["date"]):
+        return "Invalid date."
+
+def is_iso_date(date: str) -> bool:
+    return re.search("\\d{4}-((1[0-2])|(0[1-9]))-((31)|([12][0-9])|(0[1-9]))", date) is not None
